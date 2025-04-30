@@ -10,9 +10,11 @@ buttons = [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 player_turn = 'X'
 vs_ai = True
 
+#Kiểm tra ô
 def is_valid(i, j):
     return 0 <= i < BOARD_SIZE and 0 <= j < BOARD_SIZE
 
+#Làm mới bàn cờ
 def reset_game():
     global board, player_turn
     board = [[' ' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
@@ -21,12 +23,14 @@ def reset_game():
         for j in range(BOARD_SIZE):
             buttons[i][j].config(text=' ', state=tk.NORMAL)
 
+#Thay đổi chế độ
 def switch_mode():
     global vs_ai
     vs_ai = not vs_ai
     mode_btn.config(text="Chế độ: " + ("Đấu AI 🤖" if vs_ai else "2 Người 👥"))
     reset_game()
 
+#Kiểm tra thắng thua trò chơi
 def check_winner(player):
     for i in range(BOARD_SIZE):
         for j in range(BOARD_SIZE):
@@ -44,9 +48,13 @@ def check_winner(player):
                     return True
     return False
 
+#Kiểm tra hoà
 def is_full():
     return all(cell != ' ' for row in board for cell in row)
 
+#Training AI
+
+#Kiểm tra hàng cột để tối ưu nước đi
 def evaluate_line(line, player):
     score = 0
     opp = 'O' if player == 'X' else 'X'
@@ -69,6 +77,7 @@ def evaluate_line(line, player):
             score += value
     return score
 
+#Tính điểm cho Player
 def heuristic(player):
     total = 0
     for i in range(BOARD_SIZE):
@@ -83,6 +92,7 @@ def heuristic(player):
         total += evaluate_line(diag2, player)
     return total
 
+#Dự đoán nước đi cho AI
 def minimax(depth, maximizingPlayer, alpha, beta):
     if check_winner('O'):
         return 1000000
@@ -116,6 +126,7 @@ def minimax(depth, maximizingPlayer, alpha, beta):
                 break
         return minEval
 
+#Tạo dânh sách các nước đi hợp lệ cho AI
 def generate_moves():
     moves = set()
     for i in range(BOARD_SIZE):
@@ -128,6 +139,7 @@ def generate_moves():
                             moves.add((ni, nj))
     return list(moves)
 
+#Quyết định nước đi của AI
 def ai_move():
     best_score = -float('inf')
     best_move = None
@@ -141,6 +153,7 @@ def ai_move():
     if best_move:
         make_move(*best_move)
 
+#Xử lý nước đi
 def make_move(i, j):
     global player_turn
     if board[i][j] != ' ':
@@ -162,6 +175,7 @@ def make_move(i, j):
     else:
         player_turn = 'O' if player_turn == 'X' else 'X'
 
+#Main
 root = tk.Tk()
 root.title("Caro 15x15")
 
