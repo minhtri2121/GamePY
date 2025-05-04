@@ -3,7 +3,7 @@ from tkinter import messagebox
 
 BOARD_SIZE = 15
 WIN_CONDITION = 5
-SEARCH_DEPTH = 2
+SEARCH_DEPTH = 3
 
 board = [[' ' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 buttons = [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
@@ -92,6 +92,31 @@ def heuristic(player):
         total += evaluate_line(diag2, player)
     return total
 
+#Tạo danh sách các nước đi hợp lệ cho AI
+def generate_moves():
+    moves = set()
+    for i in range(BOARD_SIZE):
+        for j in range(BOARD_SIZE):
+            if board[i][j] != ' ':
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        ni, nj = i + dx, j + dy
+                        if is_valid(ni, nj) and board[ni][nj] == ' ':
+                            moves.add((ni, nj))
+    # If no moves found (game start), choose center
+    if not moves:
+        return [(BOARD_SIZE // 2, BOARD_SIZE // 2)]
+    # Calculate heuristic for moves to sort and limit to top 10 moves for pruning efficiency
+    move_scores = []
+    for i, j in moves:
+        board[i][j] = 'O'
+        score = heuristic('O')
+        board[i][j] = ' '
+        move_scores.append((score, (i, j)))
+    move_scores.sort(reverse=True, key=lambda x: x[0])
+    top_moves = [move[1] for move in move_scores[:10]]  # Limit to top 10 moves
+    return top_moves
+
 #Dự đoán nước đi cho AI
 def minimax(depth, maximizingPlayer, alpha, beta):
     if check_winner('O'):
@@ -100,17 +125,19 @@ def minimax(depth, maximizingPlayer, alpha, beta):
         return -1000000
     if depth == 0 or is_full():
         return heuristic('O') - heuristic('X')
-    
+
     moves = generate_moves()
 
     if maximizingPlayer:
         maxEval = -float('inf')
         for (i, j) in moves:
             board[i][j] = 'O'
-            eval = minimax(depth-1, False, alpha, beta)
+            eval = minimax(depth - 1, False, alpha, beta)
             board[i][j] = ' '
-            maxEval = max(maxEval, eval)
-            alpha = max(alpha, eval)
+            if eval > maxEval:
+                maxEval = eval
+            if maxEval > alpha:
+                alpha = maxEval
             if beta <= alpha:
                 break
         return maxEval
@@ -118,40 +145,34 @@ def minimax(depth, maximizingPlayer, alpha, beta):
         minEval = float('inf')
         for (i, j) in moves:
             board[i][j] = 'X'
-            eval = minimax(depth-1, True, alpha, beta)
+            eval = minimax(depth - 1, True, alpha, beta)
             board[i][j] = ' '
-            minEval = min(minEval, eval)
-            beta = min(beta, eval)
+            if eval < minEval:
+                minEval = eval
+            if minEval < beta:
+                beta = minEval
             if beta <= alpha:
                 break
         return minEval
 
-#Tạo dânh sách các nước đi hợp lệ cho AI
-def generate_moves():
-    moves = set()
-    for i in range(BOARD_SIZE):
-        for j in range(BOARD_SIZE):
-            if board[i][j] != ' ':
-                for dx in [-2, -1, 0, 1, 2]:
-                    for dy in [-2, -1, 0, 1, 2]:
-                        ni, nj = i + dx, j + dy
-                        if is_valid(ni, nj) and board[ni][nj] == ' ':
-                            moves.add((ni, nj))
-    return list(moves)
-
 #Quyết định nước đi của AI
 def ai_move():
+    mode_btn.config(text="AI đang nghĩ... ⏳")
+    root.update()
     best_score = -float('inf')
     best_move = None
-    for (i, j) in generate_moves():
+    moves = generate_moves()
+    # To further optimize, evaluate only best moves first in minimax
+    for (i, j) in moves:
         board[i][j] = 'O'
-        score = minimax(SEARCH_DEPTH-1, False, -float('inf'), float('inf'))
+        score = minimax(SEARCH_DEPTH - 1, False, -float('inf'), float('inf'))
         board[i][j] = ' '
         if score > best_score:
             best_score = score
             best_move = (i, j)
     if best_move:
         make_move(*best_move)
+    mode_btn.config(text="Chế độ: Đấu AI 🤖")
 
 #Xử lý nước đi
 def make_move(i, j):
@@ -177,7 +198,7 @@ def make_move(i, j):
 
 #Main
 root = tk.Tk()
-root.title("Caro 15x15")
+root.title("Caro")
 
 top_frame = tk.Frame(root)
 top_frame.pack()
