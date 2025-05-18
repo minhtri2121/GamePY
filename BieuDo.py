@@ -3,7 +3,7 @@ import numpy as np
 
 # Giả lập dữ liệu thời gian phản hồi (tính bằng giây) theo độ sâu tìm kiếm
 search_depths = np.arange(1, 7)  # Độ sâu từ 1 đến 6
-response_times = [0.01, 0.1, 1, 1.5, 5, 20.5]  # Thời gian tương ứng (giả lập)
+response_times = [0.1, 0.5, 1.5, 3, 5, 20.5]  # Thời gian tương ứng (giả lập)
 
 # Vẽ biểu đồ
 plt.figure(figsize=(10, 6))

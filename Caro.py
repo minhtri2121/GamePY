@@ -9,6 +9,7 @@ board = [[' ' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 buttons = [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 player_turn = 'X'
 vs_ai = True
+last_move = None
 
 #Kiểm tra ô
 def is_valid(i, j):
@@ -16,12 +17,14 @@ def is_valid(i, j):
 
 #Làm mới bàn cờ
 def reset_game():
-    global board, player_turn
+    
+    global board, player_turn, last_move
     board = [[' ' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
     player_turn = 'X'
+    last_move = None
     for i in range(BOARD_SIZE):
         for j in range(BOARD_SIZE):
-            buttons[i][j].config(text=' ', state=tk.NORMAL)
+            buttons[i][j].config(text=' ', state=tk.NORMAL, bg='SystemButtonFace')
 
 #Thay đổi chế độ
 def switch_mode():
@@ -32,25 +35,27 @@ def switch_mode():
 
 #Kiểm tra thắng thua trò chơi
 def check_winner(player):
+    # Kiểm tra 5 ô liên tiếp
     for i in range(BOARD_SIZE):
-        for j in range(BOARD_SIZE):
-            if board[i][j] != player:
-                continue
-            for dx, dy in [(1, 0), (0, 1), (1, 1), (1, -1)]:
-                count = 1
-                for step in range(1, WIN_CONDITION):
-                    ni, nj = i + dx * step, j + dy * step
-                    if is_valid(ni, nj) and board[ni][nj] == player:
-                        count += 1
-                    else:
-                        break
-                if count >= WIN_CONDITION:
-                    return True
+        for j in range(BOARD_SIZE - 4):
+            # Hàng ngang
+            if all(board[i][j+k] == player for k in range(5)):
+                return True
+            # Hàng dọc
+            if all(board[j+k][i] == player for k in range(5)):
+                return True
+    # Chéo chính
+    for i in range(BOARD_SIZE - 4):
+        for j in range(BOARD_SIZE - 4):
+            if all(board[i+k][j+k] == player for k in range(5)):
+                return True
+            if all(board[i+4-k][j+k] == player for k in range(5)):
+                return True
     return False
 
 #Kiểm tra hoà
 def is_full():
-    return all(cell != ' ' for row in board for cell in row)
+    return all(all(cell != ' ' for cell in row) for row in board)
 
 #Training AI
 
@@ -165,7 +170,7 @@ def ai_move():
     # To further optimize, evaluate only best moves first in minimax
     for (i, j) in moves:
         board[i][j] = 'O'
-        score = minimax(SEARCH_DEPTH - 1, False, -float('inf'), float('inf'))
+        score = minimax(SEARCH_DEPTH , False, -float('inf'), float('inf'))
         board[i][j] = ' '
         if score > best_score:
             best_score = score
@@ -176,11 +181,20 @@ def ai_move():
 
 #Xử lý nước đi
 def make_move(i, j):
-    global player_turn
+    global player_turn, last_move
     if board[i][j] != ' ':
         return
+
     board[i][j] = player_turn
-    buttons[i][j].config(text=player_turn, state=tk.DISABLED)
+    buttons[i][j].config(text=player_turn, state=tk.DISABLED, bg='yellow')
+
+    # Khôi phục ô cũ về màu mặc định
+    if last_move and last_move != (i, j):
+        x, y = last_move
+        buttons[x][y].config(bg='SystemButtonFace')
+
+    last_move = (i, j)
+
     if check_winner(player_turn):
         messagebox.showinfo("Kết thúc", f"{player_turn} thắng!")
         reset_game()
@@ -189,12 +203,12 @@ def make_move(i, j):
         messagebox.showinfo("Kết thúc", "Hòa!")
         reset_game()
         return
-    if vs_ai and player_turn == 'X':
-        player_turn = 'O'
-        ai_move()
-        player_turn = 'X'
-    else:
-        player_turn = 'O' if player_turn == 'X' else 'X'
+
+    player_turn = 'O' if player_turn == 'X' else 'X'
+
+    # Gọi AI nếu là chế độ đấu với AI và đến lượt 'O'
+    if vs_ai and player_turn == 'O':
+        root.after(100, ai_move)
 
 #Main
 root = tk.Tk()
